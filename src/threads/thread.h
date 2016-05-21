@@ -92,6 +92,9 @@ struct thread
 
     /* Shared between thread.c and synch.c. */
     struct list_elem elem;              /* List element. */
+    
+    /* Thread blocked time */
+    int64_t blocked_timer_tick;
 
 #ifdef USERPROG
     /* Owned by userprog/process.c. */
@@ -110,12 +113,15 @@ extern bool thread_mlfqs;
 void thread_init (void);
 void thread_start (void);
 
+void thread_check_blocked (struct thread *t, void *aux UNUSED);
+
 void thread_tick (void);
 void thread_print_stats (void);
 
 typedef void thread_func (void *aux);
 tid_t thread_create (const char *name, int priority, thread_func *, void *);
 
+void thread_set_blocked_tick(int64_t ticks);
 void thread_block (void);
 void thread_unblock (struct thread *);
 

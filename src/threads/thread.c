@@ -117,6 +117,21 @@ thread_start (void)
   sema_down (&idle_started);
 }
 
+/* Check the blocked_tick of each blocked thread.
+   If tick is over, unblock the thread. */
+void
+thread_check_blocked (struct thread *t, void *aux UNUSED)
+{
+  if (t->status == THREAD_BLOCKED && t->blocked_timer_tick > 0)
+  {
+    t->blocked_timer_tick--;
+    if (t->blocked_timer_tick <= 0)
+    {
+      thread_unblock(t);
+    }
+  }
+}
+
 /* Called by the timer interrupt handler at each timer tick.
    Thus, this function runs in an external interrupt context. */
 void
@@ -134,6 +149,8 @@ thread_tick (void)
   else
     kernel_ticks++;
 
+  thread_foreach (thread_check_blocked, NULL);
+    
   /* Enforce preemption. */
   if (++thread_ticks >= TIME_SLICE)
     intr_yield_on_return ();
@@ -204,12 +221,21 @@ thread_create (const char *name, int priority,
   sf->eip = switch_entry;
   sf->ebp = 0;
 
+  t->blocked_timer_tick = 0;
+  
   intr_set_level (old_level);
 
   /* Add to run queue. */
   thread_unblock (t);
 
   return tid;
+}
+
+/* Set timer that thread would blocked */
+void
+thread_set_blocked_tick(int64_t ticks)
+{
+  thread_current()->blocked_timer_tick = ticks;
 }
 
 /* Puts the current thread to sleep.  It will not be scheduled
@@ -221,11 +247,15 @@ thread_create (const char *name, int priority,
 void
 thread_block (void) 
 {
+  enum intr_level old_level;
+  old_level = intr_disable ();
+  
   ASSERT (!intr_context ());
-  ASSERT (intr_get_level () == INTR_OFF);
+  ASSERT (intr_get_level () == INTR_OFF); 
 
   thread_current ()->status = THREAD_BLOCKED;
   schedule ();
+  intr_set_level (old_level);
 }
 
 /* Transitions a blocked thread T to the ready-to-run state.
@@ -242,7 +272,7 @@ thread_unblock (struct thread *t)
   enum intr_level old_level;
 
   ASSERT (is_thread (t));
-
+  
   old_level = intr_disable ();
   ASSERT (t->status == THREAD_BLOCKED);
   list_push_back (&ready_list, &t->elem);
