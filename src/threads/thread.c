@@ -454,7 +454,7 @@ thread_update_priority (struct thread *t)
   intr_set_level (old_level);
 }
 
-/* Compare priority between two threads. */
+/* Compares priority between two threads. */
 bool
 thread_cmp_priority (const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)
 {
