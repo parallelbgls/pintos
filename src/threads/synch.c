@@ -216,10 +216,6 @@ lock_sema_down_pre(struct lock *lock)
 void
 lock_sema_down_post(struct lock *lock)
 {
-  enum intr_level old_level;
-
-  old_level = intr_disable ();
-
   struct thread *current_thread = thread_current ();
   int current_thread_priority = thread_get_priority();
 
@@ -230,8 +226,6 @@ lock_sema_down_post(struct lock *lock)
     thread_hold_the_lock (lock);
   }
   lock->holder = current_thread;
-
-  intr_set_level (old_level);
 }
 
 /* Acquires LOCK, sleeping until it becomes available if
@@ -411,6 +405,6 @@ cond_sema_cmp_priority (const struct list_elem *a, const struct list_elem *b, vo
 {
   struct semaphore_elem *semaphore_a = list_entry (a, struct semaphore_elem, elem);
   struct semaphore_elem *semaphore_b = list_entry (b, struct semaphore_elem, elem);
-  return list_entry(list_front(&semaphore_a->semaphore.waiters), struct thread, elem)->priority_donated 
-       > list_entry(list_front(&semaphore_b->semaphore.waiters), struct thread, elem)->priority_donated;
+  return list_entry(list_front(&semaphore_a->semaphore.waiters), struct thread, elem)->priority 
+       > list_entry(list_front(&semaphore_b->semaphore.waiters), struct thread, elem)->priority;
 }
